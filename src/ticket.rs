@@ -1,0 +1,141 @@
+use std::process::Command;
+
+use anyhow::{Context, Result, anyhow, bail};
+use serde::Deserialize;
+
+#[derive(Clone, Copy)]
+pub enum Source {
+    Argument,
+    Branch,
+}
+
+impl Source {
+    fn describe(self, input: &str) -> String {
+        match self {
+            Source::Argument => format!("argument {input:?}"),
+            Source::Branch => format!("branch {input:?}"),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct Ticket {
+    pub id: String,
+    pub title: String,
+    pub summary: String,
+}
+
+pub fn fetch(input: &str, source: Source, session_id: &str) -> Result<Ticket> {
+    let answer = ask_claude(input, session_id)?;
+    let answer = answer.trim();
+    if answer == "NONE" {
+        bail!("no Jira ticket found for {}", source.describe(input));
+    }
+
+    let ticket = parse(answer).ok_or_else(|| {
+        anyhow!(
+            "Claude did not return a valid ticket JSON for {}",
+            source.describe(input)
+        )
+    })?;
+    if !is_key(&ticket.id) {
+        bail!("Claude returned an invalid ticket id {:?}", ticket.id);
+    }
+    Ok(ticket)
+}
+
+fn ask_claude(input: &str, session_id: &str) -> Result<String> {
+    let prompt = format!(
+        "You prepare a Jira ticket for a coding session.\n\
+         Input: a Jira ticket link, key, or branch name.\n\n\
+         Steps:\n\
+         1. Determine the Jira ticket key from the input.\n\
+         2. Fetch that ticket from Jira with the Atlassian MCP tools.\n\
+         3. body: if the ticket is a subtask of any type, the parent ticket content \
+            followed by the subtask content; otherwise the ticket content.\n\
+         4. summary: one line of at most 10 words that tells what the title does \
+            not. Take from the complete body the purpose, the affected area, the \
+            expected outcome or the constraints. Never repeat or paraphrase the \
+            title. If the body has nothing beyond the title, say what is missing \
+            instead.\n\n\
+         Answer with only this JSON object, no markdown and no prose:\n\
+         {{\"id\":\"PROJECT-123\",\"title\":\"...\",\"summary\":\"...\",\"body\":\"...\"}}\n\n\
+         If the input contains no Jira ticket, answer exactly NONE.\n\n\
+         Input:\n{input}"
+    );
+
+    let output = Command::new("claude")
+        .args([
+            "--print",
+            "--output-format",
+            "text",
+            "--allowedTools=mcp__atlassian",
+            "--session-id",
+            session_id,
+            &prompt,
+        ])
+        .output()
+        .context("cannot run claude")?;
+    if !output.status.success() {
+        bail!(
+            "claude failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    Ok(String::from_utf8(output.stdout)?)
+}
+
+fn parse(answer: &str) -> Option<Ticket> {
+    let json = &answer[answer.find('{')?..];
+    serde_json::Deserializer::from_str(json)
+        .into_iter::<Ticket>()
+        .next()?
+        .ok()
+}
+
+fn is_key(candidate: &str) -> bool {
+    let Some((project, number)) = candidate.rsplit_once('-') else {
+        return false;
+    };
+    project.starts_with(|c: char| c.is_ascii_uppercase())
+        && project
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
+        && !number.is_empty()
+        && number.chars().all(|c| c.is_ascii_digit())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_key, parse};
+
+    #[test]
+    fn accepts_ticket_keys() {
+        assert!(is_key("ABC-1"));
+        assert!(is_key("ABC2-123"));
+    }
+
+    #[test]
+    fn rejects_other_input() {
+        assert!(!is_key("abc-1"));
+        assert!(!is_key("ABC"));
+        assert!(!is_key("ABC-"));
+        assert!(!is_key("feature/ABC-1"));
+        assert!(!is_key("https://example.atlassian.net/browse/ABC-1"));
+    }
+
+    #[test]
+    fn parses_json_with_surrounding_text() {
+        let answer =
+            "```json\n{\"id\":\"ABC-1\",\"title\":\"T\",\"summary\":\"S\",\"body\":\"B\"}\n```";
+        let ticket = parse(answer).expect("valid ticket");
+        assert_eq!(ticket.id, "ABC-1");
+        assert_eq!(ticket.title, "T");
+        assert_eq!(ticket.summary, "S");
+    }
+
+    #[test]
+    fn rejects_non_json() {
+        assert!(parse("NONE").is_none());
+    }
+}
