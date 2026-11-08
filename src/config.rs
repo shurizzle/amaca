@@ -1,10 +1,11 @@
+use std::ffi::CString;
 use std::fs;
 use std::io;
 use std::path::Path;
 
 use anyhow::{Context, Result};
 use jsonc_parser::parse_to_serde_value;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 const FILE_NAME: &str = ".amaca.jsonc";
 
@@ -20,6 +21,7 @@ const DEFAULT_EXISTING: &str = "Solve the ticket {id}. The ticket is already in 
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub prompt: Prompt,
+    pub command: Command,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -29,6 +31,25 @@ pub struct Prompt {
     pub created: Option<String>,
     /// Prompt used when the worktree already existed.
     pub existing: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Command {
+    /// Shell command run when the worktree was just created.
+    #[serde(deserialize_with = "deserialize_cstring")]
+    pub created: Option<CString>,
+}
+
+/// A NUL byte cannot live in a `CString`, so the config is validated here.
+fn deserialize_cstring<'de, D>(deserializer: D) -> Result<Option<CString>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(CString::new)
+        .transpose()
+        .map_err(serde::de::Error::custom)
 }
 
 impl Config {
@@ -53,6 +74,7 @@ impl Config {
     fn fill_from(&mut self, other: Config) {
         self.prompt.created = self.prompt.created.take().or(other.prompt.created);
         self.prompt.existing = self.prompt.existing.take().or(other.prompt.existing);
+        self.command.created = self.command.created.take().or(other.command.created);
     }
 }
 
@@ -103,7 +125,10 @@ mod tests {
         let root = scratch("priority");
         let child = root.join("child");
         fs::create_dir_all(&child).expect("create child dir");
-        write(&root, r#"{ "prompt": { "existing": "parent" } }"#);
+        write(
+            &root,
+            r#"{ "prompt": { "existing": "parent" }, "command": { "created": "setup" } }"#,
+        );
         write(
             &child,
             "{\n  // comments and trailing commas are valid JSONC\n  \"prompt\": { \"created\": \"child\", },\n}",
@@ -112,6 +137,18 @@ mod tests {
         let config = load_from(&child).expect("load config");
         assert_eq!(config.prompt(true, "ABC-1"), "child");
         assert_eq!(config.prompt(false, "ABC-1"), "parent");
+        assert_eq!(
+            config.command.created.as_deref(),
+            Some(c"setup"),
+            "command inherited from the parent file"
+        );
+    }
+
+    #[test]
+    fn rejects_nul_in_command() {
+        let dir = scratch("nul");
+        write(&dir, r#"{ "command": { "created": "a\u0000b" } }"#);
+        assert!(load_from(&dir).is_err(), "NUL cannot live in a CString");
     }
 
     #[test]

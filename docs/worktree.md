@@ -34,6 +34,8 @@ The main worktree root and the existing worktrees come from
 
 - Never touch a worktree that belongs to another ticket.
 - Running Amaca twice on the same ticket reuses the worktree.
+- When it creates the worktree, Amaca runs the `command.created` config command
+  inside it; its failure stops the run ([docs/config.md](config.md)).
 - Amaca changes its working directory into the ticket worktree, so every later
   step (shell, Claude) starts there.
 - Do not delete or prune worktrees. Removal stays manual.

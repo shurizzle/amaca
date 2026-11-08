@@ -35,7 +35,7 @@ ticket input
 | CLI | clap subcommands; `solve` runs the whole workflow and is the default when no subcommand is given | Done |
 | Input parser | Resolve the input (argument or git branch) into a ticket via Claude: `id`, `title`, `summary`, `body` | Done |
 | Session | New Claude session id per run, created by the ticket fetch and reused by the launchers | Done |
-| Config | `.amaca.jsonc` lookup from the current directory up to the root, closest file wins ([docs/config.md](docs/config.md)) | Done |
+| Config | `.amaca.jsonc` lookup from the current directory up to the root, closest file wins: prompts and the worktree creation command ([docs/config.md](docs/config.md)) | Done |
 | Worktree resolver | Find or create the ticket worktree from the ticket id ([docs/worktree.md](docs/worktree.md)) | Done |
 | Terminal orchestrator | Split the current pane, run the `ꙮ` banner on top and give the focus back; WezTerm backend only for now | Done |
 | Claude launcher | Resume the session named after the ticket id and ask Claude to solve the ticket | Done |
@@ -57,6 +57,9 @@ See the topic docs for the rationale.
 - The resumed session gets one prompt: ask Claude to solve the ticket. The
   prompt comes from the config, with a separate one for a just-created worktree
   ([docs/config.md](docs/config.md), [docs/workflow.md](docs/workflow.md)).
+- A just-created worktree can run one setup command from the config, through
+  `system(3)` inside the new worktree, before the layout and Claude
+  ([docs/config.md](docs/config.md)).
 - WezTerm is driven through `wezterm cli` ([docs/wezterm.md](docs/wezterm.md)).
 - The layout is a horizontal split of the current pane: a 2-row pane on top
   runs the hidden `ꙮ` command with the ticket id, title and summary, then the

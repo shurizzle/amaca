@@ -17,13 +17,27 @@ built-in defaults in `src/config.rs`.
 
 ```jsonc
 {
-  // Only the prompts that differ: the rest keeps the defaults.
+  // Only what differs: the rest keeps the defaults.
   "prompt": {
     "created": "Fresh worktree: install the dependencies, then solve {id}.",
     "existing": "Solve {id}, following the repository conventions."
+  },
+  "command": {
+    // Shell command run in the new worktree.
+    "created": "npm install"
   }
 }
 ```
+
+## Commands
+
+| Key | When |
+| --- | --- |
+| `command.created` | The worktree was just created |
+
+The command runs through `system(3)`, inheriting the terminal, after Amaca
+enters the new worktree and before the WezTerm layout and Claude start. It does
+not run when the worktree already existed. A non-zero exit stops Amaca.
 
 ## Rules
 

@@ -2,6 +2,7 @@
 #![allow(uncommon_codepoints)]
 
 mod claude;
+mod command;
 mod config;
 mod git;
 mod session;
@@ -88,6 +89,12 @@ fn solve(input: Option<String>) -> Result<()> {
     std::env::set_current_dir(&worktree.path)
         .with_context(|| format!("cannot enter {}", worktree.path.display()))?;
     terminal::set_cwd(&worktree.path)?;
+
+    if worktree.created
+        && let Some(setup) = &config.command.created
+    {
+        command::run(setup)?;
+    }
 
     wezterm::layout(&ticket, &worktree.path)?;
     let prompt = config.prompt(worktree.created, &ticket.id);
