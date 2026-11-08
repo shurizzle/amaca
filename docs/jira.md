@@ -13,6 +13,9 @@ Atlassian MCP.
 - Amaca asks Claude for the ticket through the Atlassian MCP tools
   (`claude --print --allowedTools=mcp__atlassian --session-id <uuid>`). Claude
   returns one JSON object: `id`, `title`, `summary`, `body`.
+- Amaca keeps only `id`, `title` and `summary` (`Ticket` in `src/ticket.rs`).
+  `body` is not parsed: it stays in the Claude session's context, which later
+  steps resume, so the content is never fetched twice.
 - The fetch happens inside the Claude session that the launchers resume
   (`--resume <uuid>`). The ticket content is already in its context, so later
   steps must not fetch it again.
@@ -24,8 +27,6 @@ Atlassian MCP.
   complete body. Never repeats or paraphrases the title.
 - No Jira ticket found is an explicit error.
 - Never write client names in configs or docs.
-
-## Open questions
-
-- What exactly is passed to Claude: only the key, or also a prompt template
-  with the expected output. Not decided yet.
+- The prompt is a template in `src/ticket.rs`: it asks for the key, the fetch
+  through the Atlassian MCP, the `body` and `summary` rules, one JSON object
+  with that schema, and `NONE` when no ticket exists.

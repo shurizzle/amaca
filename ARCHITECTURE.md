@@ -45,7 +45,8 @@ See the topic docs for the rationale.
 
 - Jira data is fetched by Claude, not by Amaca ([docs/jira.md](docs/jira.md)).
 - Claude returns the ticket as JSON (`id`, `title`, `summary`, `body`), fetched
-  through the Atlassian MCP tools ([docs/jira.md](docs/jira.md)).
+  through the Atlassian MCP tools ([docs/jira.md](docs/jira.md)). Amaca keeps
+  only `id`, `title` and `summary`; `body` stays in the session's context.
 - Every run creates a new Claude session; its id lives in memory only, no
   state on disk ([docs/workflow.md](docs/workflow.md)).
 - The ticket branch name is the ticket id; the worktree holds the working

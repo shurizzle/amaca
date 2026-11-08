@@ -18,6 +18,8 @@ impl Source {
     }
 }
 
+/// The ticket fields Amaca keeps. Claude also returns `body`, but it stays in
+/// the session's context and is never parsed here.
 #[derive(Deserialize)]
 pub struct Ticket {
     pub id: String,
