@@ -1,11 +1,12 @@
-use std::ffi::CString;
 use std::fs;
 use std::io;
 use std::path::Path;
 
 use anyhow::{Context, Result};
 use jsonc_parser::parse_to_serde_value;
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
+
+use crate::command::Run;
 
 const FILE_NAME: &str = ".amaca.jsonc";
 
@@ -36,20 +37,8 @@ pub struct Prompt {
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Command {
-    /// Shell command run when the worktree was just created.
-    #[serde(deserialize_with = "deserialize_cstring")]
-    pub created: Option<CString>,
-}
-
-/// A NUL byte cannot live in a `CString`, so the config is validated here.
-fn deserialize_cstring<'de, D>(deserializer: D) -> Result<Option<CString>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Option::<String>::deserialize(deserializer)?
-        .map(CString::new)
-        .transpose()
-        .map_err(serde::de::Error::custom)
+    /// Command run when the worktree was just created: a shell line or an argv.
+    pub created: Option<Run>,
 }
 
 impl Config {
@@ -109,6 +98,7 @@ mod tests {
     use uuid::Uuid;
 
     use super::load_from;
+    use crate::command::Run;
 
     fn scratch(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("amaca-config-{}-{name}", Uuid::new_v4()));
@@ -137,11 +127,27 @@ mod tests {
         let config = load_from(&child).expect("load config");
         assert_eq!(config.prompt(true, "ABC-1"), "child");
         assert_eq!(config.prompt(false, "ABC-1"), "parent");
-        assert_eq!(
-            config.command.created.as_deref(),
-            Some(c"setup"),
-            "command inherited from the parent file"
-        );
+        let Some(Run::Shell(line)) = config.command.created else {
+            panic!("command inherited from the parent file");
+        };
+        assert_eq!(line.as_c_str(), c"setup");
+    }
+
+    #[test]
+    fn parses_argv_command() {
+        let dir = scratch("argv");
+        write(&dir, r#"{ "command": { "created": ["make", "setup"] } }"#);
+        let Some(Run::Argv(args)) = load_from(&dir).expect("load config").command.created else {
+            panic!("expected an argv command");
+        };
+        assert_eq!(args, ["make", "setup"]);
+    }
+
+    #[test]
+    fn rejects_empty_argv_command() {
+        let dir = scratch("empty-argv");
+        write(&dir, r#"{ "command": { "created": [] } }"#);
+        assert!(load_from(&dir).is_err());
     }
 
     #[test]

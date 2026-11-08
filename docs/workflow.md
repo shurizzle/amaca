@@ -14,7 +14,7 @@ Jira ticket  ->  WezTerm window  ->  Claude
    session (`--resume <uuid>`) and do not fetch the ticket again.
 3. Amaca resolves the ticket worktree: existing branch, existing worktree, or a
    new branch from the dev branch ([docs/worktree.md](docs/worktree.md)).
-4. When the worktree was just created, Amaca runs the `command.created` shell
+4. When the worktree was just created, Amaca runs the `command.created` setup
    command from the config inside it ([docs/config.md](docs/config.md)).
 5. Amaca splits the current WezTerm pane: a 2-row pane on top runs the hidden
    `ꙮ` command with the ticket id, title and summary, and the focus goes back

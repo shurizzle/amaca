@@ -57,9 +57,9 @@ See the topic docs for the rationale.
 - The resumed session gets one prompt: ask Claude to solve the ticket. The
   prompt comes from the config, with a separate one for a just-created worktree
   ([docs/config.md](docs/config.md), [docs/workflow.md](docs/workflow.md)).
-- A just-created worktree can run one setup command from the config, through
-  `system(3)` inside the new worktree, before the layout and Claude
-  ([docs/config.md](docs/config.md)).
+- A just-created worktree can run one setup command from the config, inside the
+  new worktree, before the layout and Claude: a shell line through
+  `system(3)`, or an argv through `Command` ([docs/config.md](docs/config.md)).
 - WezTerm is driven through `wezterm cli` ([docs/wezterm.md](docs/wezterm.md)).
 - The layout is a horizontal split of the current pane: a 2-row pane on top
   runs the hidden `ꙮ` command with the ticket id, title and summary, then the

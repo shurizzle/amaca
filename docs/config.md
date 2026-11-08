@@ -23,7 +23,7 @@ built-in defaults in `src/config.rs`.
     "existing": "Solve {id}, following the repository conventions."
   },
   "command": {
-    // Shell command run in the new worktree.
+    // Shell line, or argv run without a shell: ["npm", "install"].
     "created": "npm install"
   }
 }
@@ -35,9 +35,11 @@ built-in defaults in `src/config.rs`.
 | --- | --- |
 | `command.created` | The worktree was just created |
 
-The command runs through `system(3)`, inheriting the terminal, after Amaca
-enters the new worktree and before the WezTerm layout and Claude start. It does
-not run when the worktree already existed. A non-zero exit stops Amaca.
+A string runs through `system(3)`, so the shell interprets it. An array of
+strings is the argv run directly with `Command`, without a shell. Both inherit
+the terminal, run after Amaca enters the new worktree and before the WezTerm
+layout and Claude start. The command does not run when the worktree already
+existed. A non-zero exit stops Amaca.
 
 ## Rules
 
