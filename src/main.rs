@@ -2,6 +2,7 @@
 #![allow(uncommon_codepoints)]
 
 mod claude;
+mod config;
 mod git;
 mod session;
 mod terminal;
@@ -76,6 +77,7 @@ fn hold(first: &str, second: &str, third: &str) -> Result<()> {
 
 fn solve(input: Option<String>) -> Result<()> {
     git::require_repository()?;
+    let config = config::Config::load()?;
     let (input, source) = match input {
         Some(input) => (input, Source::Argument),
         None => (git::current_branch()?, Source::Branch),
@@ -88,5 +90,6 @@ fn solve(input: Option<String>) -> Result<()> {
     terminal::set_cwd(&worktree.path)?;
 
     wezterm::layout(&ticket, &worktree.path)?;
-    claude::launch(&session_id, &ticket, worktree.created)
+    let prompt = config.prompt(worktree.created, &ticket.id);
+    claude::launch(&session_id, &ticket, &prompt)
 }

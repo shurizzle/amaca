@@ -19,8 +19,9 @@ Jira ticket  ->  WezTerm window  ->  Claude
    to the original pane ([docs/wezterm.md](docs/wezterm.md)).
 5. Amaca resumes the session interactively in the original pane, named after
    the ticket id (`--name <TICKET_ID>`), asking Claude to solve the ticket. The
-   ticket is already in the session's context. When the worktree was just
-   created, the prompt first says so and asks Claude to do any setup it needs.
+   ticket is already in the session's context. The prompt comes from the
+   config ([docs/config.md](docs/config.md)): `prompt.created` when the
+   worktree was just created, `prompt.existing` otherwise.
 
 ## Input
 
