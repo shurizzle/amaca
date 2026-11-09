@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "description": "User configuration. Every field is optional, so parents and children merge\nfield by field.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Editor hint pointing at `schema.json`. Accepted and ignored.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "command": {
+      "$ref": "#/$defs/Command"
+    },
+    "prompt": {
+      "$ref": "#/$defs/Prompt"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Command": {
+      "description": "Commands run after Amaca enters the worktree and before WezTerm and Claude\nstart.",
+      "type": "object",
+      "properties": {
+        "created": {
+          "description": "Command run when the worktree was just created: a shell line or an argv.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Run"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Prompt": {
+      "description": "Prompts sent to Claude. `{id}` is replaced with the ticket id.",
+      "type": "object",
+      "properties": {
+        "created": {
+          "description": "Prompt used when the worktree was just created.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "existing": {
+          "description": "Prompt used when the worktree already existed.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "Run": {
+      "description": "A configured command: a shell line, or an argv run without a shell.",
+      "anyOf": [
+        {
+          "description": "Shell line, run through system(3). It cannot hold a NUL.",
+          "type": "string",
+          "pattern": "^[^\\x00]*$"
+        },
+        {
+          "description": "Argv run directly, without a shell. The first element is the program.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      ]
+    }
+  }
+}

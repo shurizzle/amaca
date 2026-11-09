@@ -41,6 +41,43 @@ the terminal, run after Amaca enters the new worktree and before the WezTerm
 layout and Claude start. The command does not run when the worktree already
 existed. A non-zero exit stops Amaca.
 
+## Editor schema
+
+`schema.json` in the repository root describes this file. Point your editor at
+it with a `$schema` key inside the config:
+
+```jsonc
+{
+  "$schema": "../schema.json",
+  "prompt": { "existing": "Solve {id}, following the repository conventions." }
+}
+```
+
+`$schema` is accepted and ignored. With VS Code you can instead associate the
+file globally in `.vscode/settings.json`:
+
+```json
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["**/.amaca.jsonc"],
+      "url": "./schema.json"
+    }
+  ]
+}
+```
+
+The schema is generated from the Rust types with `schemars`, under
+`#[cfg_attr(test, derive(schemars::JsonSchema))]`, so the dependency stays a
+dev-dependency. After changing a config struct, regenerate it and commit the
+result:
+
+```sh
+UPDATE_SCHEMA=1 cargo test config_schema_is_current
+```
+
+`cargo test` fails when the committed `schema.json` is stale.
+
 ## Rules
 
 - Comments and trailing commas are accepted (JSONC).

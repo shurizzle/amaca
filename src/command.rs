@@ -7,10 +7,14 @@ use serde::Deserializer;
 use serde::de::Error as _;
 
 /// A configured command: a shell line, or an argv run without a shell.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+#[cfg_attr(test, schemars(untagged))]
 #[derive(Debug)]
 pub enum Run {
-    Shell(CString),
-    Argv(Vec<OsString>),
+    /// Shell line, run through system(3). It cannot hold a NUL.
+    Shell(#[cfg_attr(test, schemars(with = "String", extend("pattern" = r"^[^\x00]*$")))] CString),
+    /// Argv run directly, without a shell. The first element is the program.
+    Argv(#[cfg_attr(test, schemars(with = "Vec<String>", extend("minItems" = 1)))] Vec<OsString>),
 }
 
 impl<'de> Deserialize<'de> for Run {

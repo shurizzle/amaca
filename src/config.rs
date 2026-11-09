@@ -18,13 +18,19 @@ const DEFAULT_EXISTING: &str = "Solve the ticket {id}. The ticket is already in 
 
 /// User configuration. Every field is optional, so parents and children merge
 /// field by field.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    /// Editor hint pointing at `schema.json`. Accepted and ignored.
+    #[serde(rename = "$schema")]
+    pub schema: Option<String>,
     pub prompt: Prompt,
     pub command: Command,
 }
 
+/// Prompts sent to Claude. `{id}` is replaced with the ticket id.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Prompt {
@@ -34,6 +40,9 @@ pub struct Prompt {
     pub existing: Option<String>,
 }
 
+/// Commands run after Amaca enters the worktree and before WezTerm and Claude
+/// start.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Command {
@@ -61,6 +70,7 @@ impl Config {
 
     /// Fills the fields still unset, so the closest file wins.
     fn fill_from(&mut self, other: Config) {
+        self.schema = self.schema.take().or(other.schema);
         self.prompt.created = self.prompt.created.take().or(other.prompt.created);
         self.prompt.existing = self.prompt.existing.take().or(other.prompt.existing);
         self.command.created = self.command.created.take().or(other.command.created);
@@ -158,6 +168,14 @@ mod tests {
     }
 
     #[test]
+    fn accepts_schema_hint() {
+        let dir = scratch("schema-key");
+        write(&dir, r#"{ "$schema": "../schema.json" }"#);
+        let config = load_from(&dir).expect("load config");
+        assert_eq!(config.schema.as_deref(), Some("../schema.json"));
+    }
+
+    #[test]
     fn uses_defaults_without_files() {
         let dir = scratch("empty");
         let config = load_from(&dir).expect("load config");
@@ -166,6 +184,26 @@ mod tests {
             config
                 .prompt(false, "ABC-1")
                 .contains("Solve the ticket ABC-1")
+        );
+    }
+
+    /// Keeps `schema.json` in sync with the Rust definitions.
+    /// Regenerate with `UPDATE_SCHEMA=1 cargo test config_schema_is_current`.
+    #[test]
+    fn config_schema_is_current() {
+        let schema = schemars::schema_for!(super::Config);
+        let rendered = format!(
+            "{}\n",
+            serde_json::to_string_pretty(&schema).expect("render schema")
+        );
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("schema.json");
+        if std::env::var_os("UPDATE_SCHEMA").is_some() {
+            fs::write(&path, &rendered).expect("write schema.json");
+        }
+        let committed = fs::read_to_string(&path).expect("read schema.json");
+        assert_eq!(
+            committed, rendered,
+            "schema.json is stale; run UPDATE_SCHEMA=1 cargo test config_schema_is_current"
         );
     }
 }

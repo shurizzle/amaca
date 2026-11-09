@@ -27,6 +27,7 @@ amaca PROJ-123         # solve is the default subcommand
 - [ARCHITECTURE.md](ARCHITECTURE.md) — design, components, decisions, open questions
 - [AGENTS.md](AGENTS.md) — rules for agents and code conventions
 - [docs/](docs/) — knowledge base: workflow, integrations, configuration
+- [schema.json](schema.json) — JSON Schema for `.amaca.jsonc`
 
 ## Build
 
