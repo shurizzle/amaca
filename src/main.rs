@@ -78,6 +78,7 @@ fn hold(first: &str, second: &str, third: &str) -> Result<()> {
 
 fn solve(input: Option<String>) -> Result<()> {
     git::require_repository()?;
+    let pane = wezterm::pane()?;
     let config = config::Config::load()?;
     let (input, source) = match input {
         Some(input) => (input, Source::Argument),
@@ -96,7 +97,7 @@ fn solve(input: Option<String>) -> Result<()> {
         command::run(setup)?;
     }
 
-    wezterm::layout(&ticket, &worktree.path)?;
+    wezterm::layout(&ticket, &worktree.path, &pane)?;
     let prompt = config.prompt(worktree.created, &ticket.id);
     claude::launch(&session_id, &ticket, &prompt)
 }

@@ -14,7 +14,13 @@ backend.
 ## Layout
 
 Amaca runs inside a WezTerm pane (`WEZTERM_PANE`), and builds the layout with
-`wezterm cli`:
+`wezterm cli`.
+
+Before any other work, Amaca checks the backend: `WEZTERM_PANE` must be set
+and `wezterm cli list` must succeed. Outside WezTerm, or with a mux that does
+not answer, Amaca exits before fetching the ticket or creating the worktree.
+
+Layout steps:
 
 1. `wezterm cli split-pane --top --cells 2 --cwd <worktree> -- <current exe> ꙮ <id> <title> <summary>`
    splits the current pane horizontally; the new 2-row pane above runs the
