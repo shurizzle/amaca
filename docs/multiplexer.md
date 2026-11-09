@@ -8,6 +8,7 @@ ticket banner in the new one. Two kinds of backend are supported:
 | Standalone multiplexer | zellij ([zellij.md](zellij.md)) | `ZELLIJ_PANE_ID` |
 | Standalone multiplexer | tmux ([tmux.md](tmux.md)) | `TMUX_PANE` |
 | Standalone multiplexer | screen ([screen.md](screen.md)) | session from `STY` |
+| Terminal with a built-in mux | iTerm2 ([iterm2.md](iterm2.md)) | session from `ITERM_SESSION_ID` |
 | Terminal with a built-in mux | WezTerm ([wezterm.md](wezterm.md)) | `WEZTERM_PANE` |
 
 The backend code lives in `src/mux/`: `mod.rs` detects and dispatches, and one
@@ -17,18 +18,21 @@ module per backend holds the backend-specific calls.
 
 Before any other work, Amaca detects the backend by calling each backend's
 `detect() -> Option<Mux>` in priority order, and exits early when none
-returns a backend. Standalone multiplexers take precedence over WezTerm, a
-terminal with a built-in multiplexer that can also run them inside it: they
-own the panes in that case. zellij comes before tmux because it commonly runs
-inside WezTerm, and there it owns the panes; tmux comes before screen.
+returns a backend. Standalone multiplexers take precedence over iTerm2 and
+WezTerm, terminals with a built-in multiplexer that can also run them inside
+them: they own the panes in that case. zellij comes before tmux because it
+commonly runs inside those terminals, and there it owns the panes; tmux comes
+before screen.
 
 1. `zellij::detect()`: `ZELLIJ_PANE_ID` is set and
    `zellij action list-panes` succeeds.
 2. `tmux::detect()`: `TMUX_PANE` is set and `tmux list-panes` succeeds.
 3. `screen::detect()`: `STY` is set and `screen -Q number` succeeds.
-4. `wezterm::detect()`: `WEZTERM_PANE` is set and `wezterm cli list`
+4. `iterm2::detect()`: `ITERM_SESSION_ID` is set and the iTerm2 control
+   socket exists.
+5. `wezterm::detect()`: `WEZTERM_PANE` is set and `wezterm cli list`
    succeeds.
-5. Otherwise: error, no ticket is fetched and no worktree is created.
+6. Otherwise: error, no ticket is fetched and no worktree is created.
 
 A set environment variable is not enough: the server must answer too. When
 several candidates are present, a backend whose probe fails falls through to

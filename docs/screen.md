@@ -2,7 +2,7 @@
 
 screen is a standalone terminal multiplexer: it runs inside any terminal. It
 owns the panes even if the outer terminal has its own multiplexer, so screen
-takes precedence over WezTerm and comes after zellij and tmux
+takes precedence over iTerm2 and WezTerm and comes after zellij and tmux
 ([docs/multiplexer.md](multiplexer.md)).
 
 ## Check

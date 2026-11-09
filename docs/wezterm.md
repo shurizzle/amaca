@@ -3,7 +3,8 @@
 WezTerm is a terminal with a built-in multiplexer. Amaca drives it through
 `wezterm cli` when it runs inside WezTerm and no standalone multiplexer is
 available: zellij, tmux and screen take precedence over WezTerm when more than
-one is present ([docs/multiplexer.md](multiplexer.md)).
+one is present. iTerm2 and WezTerm cannot both be the outer terminal, so their
+order in the chain does not matter ([docs/multiplexer.md](multiplexer.md)).
 
 ## Check
 
