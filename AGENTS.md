@@ -47,7 +47,8 @@ fixed or deleted, not left behind.
 - `schema.json` is generated from the config structs. After changing them, run
   `UPDATE_SCHEMA=1 cargo test config_schema_is_current`.
 - Keep multiplexer-specific code inside its backend under `src/mux/`: no
-  `tmux` or `wezterm cli` calls outside the tmux and WezTerm modules.
+  `zellij action`, `tmux` or `wezterm cli` calls outside the zellij, tmux and
+  WezTerm modules.
 
 ## Git
 

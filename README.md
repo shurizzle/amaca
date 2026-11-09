@@ -2,7 +2,8 @@
 
 Automates a personal workflow: **Jira -> terminal multiplexer -> Claude**.
 Takes a ticket as input and sets up the terminal window to work on it.
-Supported multiplexers: tmux and WezTerm (tmux wins when both are present).
+Supported multiplexers: zellij, tmux and WezTerm (standalone multiplexers win
+when more than one is present).
 
 ## Status
 
@@ -10,8 +11,9 @@ Input handling works: a Jira link or key as argument, or the current git
 branch when no argument is given. Claude resolves the ticket and returns
 `id`, `title`, `summary` and `body` as JSON, inside the run's Claude session,
 so the content stays in its context for the next steps. Amaca then finds or
-creates the ticket worktree, enters it, splits the current tmux or WezTerm pane
-with a 2-row ticket banner on top, gives the focus back, resumes the session
+creates the ticket worktree, enters it, splits the current zellij, tmux or
+WezTerm pane
+with a small ticket banner on top, gives the focus back, resumes the session
 named after the ticket id and asks Claude to solve the ticket.
 
 ## Usage

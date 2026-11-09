@@ -5,6 +5,7 @@ ticket banner in the new one. Two kinds of backend are supported:
 
 | Kind | Backend | Pane id |
 | --- | --- | --- |
+| Standalone multiplexer | zellij ([zellij.md](zellij.md)) | `ZELLIJ_PANE_ID` |
 | Standalone multiplexer | tmux ([tmux.md](tmux.md)) | `TMUX_PANE` |
 | Terminal with a built-in mux | WezTerm ([wezterm.md](wezterm.md)) | `WEZTERM_PANE` |
 
@@ -15,18 +16,23 @@ module per backend holds the backend-specific calls.
 
 Before any other work, Amaca detects the backend by calling each backend's
 `detect() -> Option<Mux>` in priority order, and exits early when none
-returns a backend. tmux takes precedence over WezTerm: a terminal with a
-built-in multiplexer can also run tmux inside it, and then tmux is the mux
-that owns the panes.
+returns a backend. Standalone multiplexers take precedence over WezTerm, a
+terminal with a built-in multiplexer that can also run them inside it: they
+own the panes in that case. zellij comes before tmux because it commonly runs
+inside WezTerm, and there it owns the panes.
 
-1. `tmux::detect()`: `TMUX_PANE` is set and `tmux list-panes` succeeds.
-2. `wezterm::detect()`: `WEZTERM_PANE` is set and `wezterm cli list`
+1. `zellij::detect()`: `ZELLIJ_PANE_ID` is set and
+   `zellij action list-panes` succeeds.
+2. `tmux::detect()`: `TMUX_PANE` is set and `tmux list-panes` succeeds.
+3. `wezterm::detect()`: `WEZTERM_PANE` is set and `wezterm cli list`
    succeeds.
-3. Otherwise: error, no ticket is fetched and no worktree is created.
+4. Otherwise: error, no ticket is fetched and no worktree is created.
 
 A set environment variable is not enough: the server must answer too. When
 several candidates are present, a backend whose probe fails falls through to
-the next one.
+the next one. Nesting one standalone multiplexer inside the other is not
+supported: detection picks zellij before tmux even when tmux runs inside
+zellij.
 
 After changing directory into the ticket worktree, Amaca emits OSC 7
 (`\x1b]7;file://<path>\x07`) so the terminal tracks the worktree as the current

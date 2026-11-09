@@ -1,9 +1,10 @@
-//! Terminal multiplexer backends: standalone multiplexers such as tmux, and
-//! terminals with the feature built in such as WezTerm. Amaca runs inside one
-//! of them and lays the ticket out on the current pane.
+//! Terminal multiplexer backends: standalone multiplexers such as tmux and
+//! zellij, and terminals with the feature built in such as WezTerm. Amaca runs
+//! inside one of them and lays the ticket out on the current pane.
 
 pub mod tmux;
 pub mod wezterm;
+pub mod zellij;
 
 use std::path::Path;
 
@@ -15,6 +16,7 @@ use crate::ticket::Ticket;
 pub enum Mux {
     Tmux(String),
     Wezterm(String),
+    Zellij(String),
 }
 
 macro_rules! fallback {
@@ -30,12 +32,13 @@ macro_rules! fallback {
 }
 
 impl Mux {
-    /// Detects the multiplexer by trying the backends in priority order. tmux
-    /// wins over WezTerm: a terminal with a built-in multiplexer can also run
-    /// tmux inside it.
+    /// Detects the multiplexer by trying the backends in priority order. The
+    /// standalone multiplexers win over WezTerm: a terminal with a built-in
+    /// multiplexer can also run one of them inside it. zellij wins over tmux
+    /// because it commonly runs inside WezTerm, where it owns the panes.
     pub fn detect() -> Result<Self> {
-        fallback!(tmux::detect, wezterm::detect)
-            .context("not inside tmux or WezTerm: amaca needs a terminal multiplexer")
+        fallback!(zellij::detect, tmux::detect, wezterm::detect)
+            .context("not inside zellij, tmux or WezTerm: amaca needs a terminal multiplexer")
     }
 
     /// Splits the current pane, runs the `ꙮ` banner on top, and gives the
@@ -44,6 +47,7 @@ impl Mux {
         match self {
             Mux::Tmux(pane) => tmux::layout(ticket, cwd, pane),
             Mux::Wezterm(pane) => wezterm::layout(ticket, cwd, pane),
+            Mux::Zellij(pane) => zellij::layout(ticket, cwd, pane),
         }
     }
 }
