@@ -11,8 +11,13 @@ Atlassian MCP.
 - Amaca only handles the key/context it needs to name the window and the
   working directory.
 - Amaca asks Claude for the ticket through the Atlassian MCP tools
-  (`claude --print --allowedTools=mcp__atlassian --session-id <uuid>`). Claude
-  returns one JSON object: `id`, `title`, `summary`, `body`.
+  (`claude --print --allowedTools=<rules> --session-id <uuid>`). The allowed
+  tools are `mcp__<server>__getJiraIssue` for every MCP server that
+  `claude mcp list` reports, so no client-specific server name is hardcoded.
+  Claude returns one JSON object: `id`, `title`, `summary`, `body`.
+  - `claude mcp list` has no JSON output: the parser in `src/ticket.rs` reads
+    the first token of each unindented line and drops disabled servers.
+  - When the listing fails, the fallback is `mcp__atlassian`.
 - Amaca keeps only `id`, `title` and `summary` (`Ticket` in `src/ticket.rs`).
   `body` is not parsed: it stays in the Claude session's context, which later
   steps resume, so the content is never fetched twice.

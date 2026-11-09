@@ -35,6 +35,7 @@ pub fn fetch(input: &str, source: Source, session_id: &str) -> Result<Ticket> {
     }
 
     let ticket = parse(answer).ok_or_else(|| {
+        eprintln!("Claude answer:\n{answer}");
         anyhow!(
             "Claude did not return a valid ticket JSON for {}",
             source.describe(input)
@@ -66,12 +67,13 @@ fn ask_claude(input: &str, session_id: &str) -> Result<String> {
          Input:\n{input}"
     );
 
+    let allowed_tools = format!("--allowedTools={}", allowed_tools().join(","));
     let output = Command::new("claude")
         .args([
             "--print",
             "--output-format",
             "text",
-            "--allowedTools=mcp__atlassian",
+            &allowed_tools,
             "--session-id",
             session_id,
             &prompt,
@@ -85,6 +87,41 @@ fn ask_claude(input: &str, session_id: &str) -> Result<String> {
         );
     }
     Ok(String::from_utf8(output.stdout)?)
+}
+
+/// MCP servers are named per setup, so the allow rule is built from the ones
+/// Claude Code reports instead of hardcoding a name.
+fn allowed_tools() -> Vec<String> {
+    let servers = Command::new("claude")
+        .args(["mcp", "list"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| server_names(&String::from_utf8_lossy(&output.stdout)))
+        .unwrap_or_default();
+    if servers.is_empty() {
+        return vec!["mcp__atlassian".into()];
+    }
+    servers
+        .into_iter()
+        .map(|server| format!("mcp__{server}__getJiraIssue"))
+        .collect()
+}
+
+fn server_names(list: &str) -> Vec<String> {
+    list.lines()
+        .filter(|line| !line.starts_with(char::is_whitespace))
+        .filter(|line| !line.contains("Disabled"))
+        .filter_map(|line| line.split_once(':'))
+        .map(|(name, _)| name.trim())
+        .filter(|name| {
+            name.starts_with(|c: char| c.is_ascii_alphanumeric())
+                && name
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        })
+        .map(str::to_owned)
+        .collect()
 }
 
 fn parse(answer: &str) -> Option<Ticket> {
@@ -109,7 +146,18 @@ fn is_key(candidate: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_key, parse};
+    use super::{is_key, parse, server_names};
+
+    #[test]
+    fn reads_server_names_from_list() {
+        let list = "Checking MCP server health…\n\n\
+                    atlassian-team: https://mcp.atlassian.com/v1/mcp (HTTP) - ✔ Connected\n\
+                    figma: https://mcp.figma.com/mcp (HTTP) - ✔ Connected\n\
+                    other: true  - ⊘ Disabled for this project\n\
+                    claude.ai Docs: https://api.anthropic.com/v1/pages/mcp - ✔ Connected\n\
+                    ├ conflict text: ignored\n";
+        assert_eq!(server_names(list), ["atlassian-team", "figma"]);
+    }
 
     #[test]
     fn accepts_ticket_keys() {
