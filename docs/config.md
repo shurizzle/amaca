@@ -37,7 +37,7 @@ built-in defaults in `src/config.rs`.
 
 A string runs through `system(3)`, so the shell interprets it. An array of
 strings is the argv run directly with `Command`, without a shell. Both inherit
-the terminal, run after Amaca enters the new worktree and before the WezTerm
+the terminal, run after Amaca enters the new worktree and before the pane
 layout and Claude start. The command does not run when the worktree already
 existed. A non-zero exit stops Amaca.
 

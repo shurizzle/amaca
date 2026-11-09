@@ -40,8 +40,8 @@ pub struct Prompt {
     pub existing: Option<String>,
 }
 
-/// Commands run after Amaca enters the worktree and before WezTerm and Claude
-/// start.
+/// Commands run after Amaca enters the worktree and before the layout and
+/// Claude start.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]

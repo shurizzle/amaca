@@ -1,26 +1,16 @@
 # WezTerm
 
-Amaca drives a terminal multiplexer. **WezTerm is the only supported backend
-for now**, chosen for simplicity.
+WezTerm is a terminal with a built-in multiplexer. Amaca drives it through
+`wezterm cli` when it runs inside WezTerm and tmux is not available: tmux
+takes precedence over WezTerm when both are present
+([docs/multiplexer.md](multiplexer.md)).
 
-## Future backends
+## Check
 
-Other multiplexers will be supported later (tmux, for example). Do not couple
-the rest of the code to WezTerm: the input parser, ticket resolution and
-launchers must not care which multiplexer is running. Keep WezTerm-specific
-code — `wezterm cli` calls, pane/tab/workspace creation — inside the WezTerm
-backend.
+`WEZTERM_PANE` must be set and `wezterm cli list` must succeed. When the probe
+fails, Amaca exits before fetching the ticket or creating the worktree.
 
 ## Layout
-
-Amaca runs inside a WezTerm pane (`WEZTERM_PANE`), and builds the layout with
-`wezterm cli`.
-
-Before any other work, Amaca checks the backend: `WEZTERM_PANE` must be set
-and `wezterm cli list` must succeed. Outside WezTerm, or with a mux that does
-not answer, Amaca exits before fetching the ticket or creating the worktree.
-
-Layout steps:
 
 1. `wezterm cli split-pane --top --cells 2 --cwd <worktree> -- <current exe> ꙮ <id> <title> <summary>`
    splits the current pane horizontally; the new 2-row pane above runs the
@@ -32,21 +22,10 @@ Layout steps:
 `ꙮ` sets the terminal title to the ticket id, prints the ticket data and waits
 forever, so the banner stays visible above Claude.
 
-After changing directory into the ticket worktree, Amaca emits OSC 7
-(`\x1b]7;file://<path>\x07`) so the terminal tracks the worktree as the current
-directory.
-
 ## Rules
 
 - Only `wezterm cli`. No direct socket protocol, no writing WezTerm
   config files.
-- Keep `wezterm cli` calls inside `src/wezterm.rs`.
-- Do not add a multiplexer abstraction now. Add it when the second backend
-  arrives.
+- Keep `wezterm cli` calls inside `src/mux/wezterm.rs`.
 - Running Amaca twice on the same ticket currently adds another top pane; the
   split is not reused. Reuse is open.
-
-## Open questions
-
-- Reusing an existing top pane instead of splitting again.
-- Backend selection: config file, flag, or detection. Not decided yet.

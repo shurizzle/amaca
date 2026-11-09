@@ -3,22 +3,19 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
 
+use super::Mux;
 use crate::ticket::Ticket;
 
-/// Returns the current pane id, failing early when Amaca runs outside WezTerm
-/// or the mux does not answer.
-pub fn pane() -> Result<String> {
-    let pane = std::env::var("WEZTERM_PANE")
-        .context("WEZTERM_PANE is not set; run Amaca inside WezTerm")?;
+/// Returns the current pane when Amaca runs inside a working WezTerm.
+pub fn detect() -> Option<Mux> {
+    let pane = std::env::var("WEZTERM_PANE").ok()?;
     let status = Command::new("wezterm")
         .args(["cli", "list"])
         .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status()
-        .context("cannot run wezterm cli list")?;
-    if !status.success() {
-        bail!("wezterm cli list exited with {status}; is the WezTerm mux reachable?");
-    }
-    Ok(pane)
+        .ok()?;
+    status.success().then_some(Mux::Wezterm(pane))
 }
 
 /// Splits the current pane horizontally with a 2-row pane above it, running

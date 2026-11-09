@@ -4,8 +4,8 @@ Rules for agents working on Amaca. See [ARCHITECTURE.md](ARCHITECTURE.md) for de
 
 ## Project
 
-Amaca automates a personal workflow: Jira -> WezTerm -> Claude.
-It takes a ticket as input and sets up the WezTerm window to work on it.
+Amaca automates a personal workflow: Jira -> terminal multiplexer -> Claude.
+It takes a ticket as input and sets up the terminal window to work on it.
 
 ## Language
 
@@ -46,7 +46,8 @@ fixed or deleted, not left behind.
 - Before considering work done: `cargo fmt`, `cargo clippy`, `cargo test`.
 - `schema.json` is generated from the config structs. After changing them, run
   `UPDATE_SCHEMA=1 cargo test config_schema_is_current`.
-- Keep multiplexer-specific code inside its backend. WezTerm only for now, other multiplexers later: do not leak `wezterm cli` calls outside the WezTerm module.
+- Keep multiplexer-specific code inside its backend under `src/mux/`: no
+  `tmux` or `wezterm cli` calls outside the tmux and WezTerm modules.
 
 ## Git
 

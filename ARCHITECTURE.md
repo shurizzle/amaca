@@ -1,10 +1,11 @@
 # Architecture
 
-Amaca automates a personal workflow: Jira -> WezTerm -> Claude.
+Amaca automates a personal workflow: Jira -> terminal multiplexer -> Claude.
 Given a ticket, it prepares the terminal window to work on it.
 
 Topic details live in the knowledge base: [docs/workflow.md](docs/workflow.md),
 [docs/jira.md](docs/jira.md), [docs/worktree.md](docs/worktree.md),
+[docs/multiplexer.md](docs/multiplexer.md), [docs/tmux.md](docs/tmux.md),
 [docs/wezterm.md](docs/wezterm.md), [docs/config.md](docs/config.md).
 
 ## Flow
@@ -19,7 +20,7 @@ ticket input
  worktree resolution  ->  ticket working directory
      |
      v
- WezTerm setup (wezterm cli)
+ multiplexer setup (tmux or wezterm cli)
      |
      +--> top pane (2 rows): current exe with the hidden ꙮ command,
      |    given id, title and summary; focus returns to the pane below
@@ -37,7 +38,7 @@ ticket input
 | Session | New Claude session id per run, created by the ticket fetch and reused by the launchers | Done |
 | Config | `.amaca.jsonc` lookup from the current directory up to the root, closest file wins: prompts and the worktree creation command ([docs/config.md](docs/config.md)) | Done |
 | Worktree resolver | Find or create the ticket worktree from the ticket id ([docs/worktree.md](docs/worktree.md)) | Done |
-| Terminal orchestrator | Split the current pane, run the `ꙮ` banner on top and give the focus back; WezTerm backend only for now | Done |
+| Terminal orchestrator | Detect the multiplexer, split the current pane, run the `ꙮ` banner on top and give the focus back; tmux and WezTerm backends | Done |
 | Claude launcher | Resume the session named after the ticket id and ask Claude to solve the ticket | Done |
 
 ## Decisions
@@ -60,18 +61,24 @@ See the topic docs for the rationale.
 - A just-created worktree can run one setup command from the config, inside the
   new worktree, before the layout and Claude: a shell line through
   `system(3)`, or an argv through `Command` ([docs/config.md](docs/config.md)).
-- WezTerm is driven through `wezterm cli` ([docs/wezterm.md](docs/wezterm.md)).
-- The layout is a horizontal split of the current pane: a 2-row pane on top
-  runs the hidden `ꙮ` command with the ticket id, title and summary, then the
-  focus goes back to the pane below, where Claude launches
-  ([docs/wezterm.md](docs/wezterm.md)).
+- The backend is detected by probing in priority order: tmux when `TMUX_PANE`
+  is set and `tmux list-panes` succeeds; otherwise WezTerm when
+  `WEZTERM_PANE` is set and `wezterm cli list` succeeds. A failing tmux falls
+  through to WezTerm ([docs/multiplexer.md](docs/multiplexer.md)).
+- Each backend is driven through its own CLI: `tmux` ([docs/tmux.md](docs/tmux.md))
+  or `wezterm cli` ([docs/wezterm.md](docs/wezterm.md)).
+- The layout is a split of the current pane: a 2-row pane on top runs the
+  hidden `ꙮ` command with the ticket id, title and summary, then the focus goes
+  back to the pane below, where Claude launches
+  ([docs/multiplexer.md](docs/multiplexer.md)).
 
 ## Non-goals
 
 - Launching Neovim. Editing is part of the user's own workflow, outside Amaca.
-- Only WezTerm is supported for now; other multiplexers (tmux) come later. No
-  abstraction layer until the second backend exists ([docs/wezterm.md](docs/wezterm.md)).
+- Other multiplexers and terminals with a built-in mux beyond tmux and WezTerm.
+  Add one module under `src/mux/` per backend
+  ([docs/multiplexer.md](docs/multiplexer.md)).
 
 ## Open questions
 
-- Backend selection: config file, flag, or detection. See [docs/wezterm.md](docs/wezterm.md).
+- Reusing an existing top pane instead of splitting again.

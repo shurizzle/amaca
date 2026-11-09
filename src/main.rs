@@ -5,10 +5,10 @@ mod claude;
 mod command;
 mod config;
 mod git;
+mod mux;
 mod session;
 mod terminal;
 mod ticket;
-mod wezterm;
 mod worktree;
 
 use std::io::{self, Write};
@@ -17,6 +17,7 @@ use std::process::ExitCode;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
+use mux::Mux;
 use ticket::Source;
 
 #[derive(Parser)]
@@ -78,7 +79,7 @@ fn hold(first: &str, second: &str, third: &str) -> Result<()> {
 
 fn solve(input: Option<String>) -> Result<()> {
     git::require_repository()?;
-    let pane = wezterm::pane()?;
+    let mux = Mux::detect()?;
     let config = config::Config::load()?;
     let (input, source) = match input {
         Some(input) => (input, Source::Argument),
@@ -97,7 +98,7 @@ fn solve(input: Option<String>) -> Result<()> {
         command::run(setup)?;
     }
 
-    wezterm::layout(&ticket, &worktree.path, &pane)?;
+    mux.layout(&ticket, &worktree.path)?;
     let prompt = config.prompt(worktree.created, &ticket.id);
     claude::launch(&session_id, &ticket, &prompt)
 }

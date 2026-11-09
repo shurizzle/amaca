@@ -22,7 +22,7 @@
   "additionalProperties": false,
   "$defs": {
     "Command": {
-      "description": "Commands run after Amaca enters the worktree and before WezTerm and Claude\nstart.",
+      "description": "Commands run after Amaca enters the worktree and before the layout and\nClaude start.",
       "type": "object",
       "properties": {
         "created": {
