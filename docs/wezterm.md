@@ -1,9 +1,9 @@
 # WezTerm
 
 WezTerm is a terminal with a built-in multiplexer. Amaca drives it through
-`wezterm cli` when it runs inside WezTerm and tmux is not available: tmux
-takes precedence over WezTerm when both are present
-([docs/multiplexer.md](multiplexer.md)).
+`wezterm cli` when it runs inside WezTerm and no standalone multiplexer is
+available: zellij, tmux and screen take precedence over WezTerm when more than
+one is present ([docs/multiplexer.md](multiplexer.md)).
 
 ## Check
 

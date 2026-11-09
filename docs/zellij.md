@@ -2,7 +2,7 @@
 
 zellij is a standalone terminal multiplexer: it runs inside any terminal. It
 often runs inside WezTerm, where it owns the panes, so zellij takes precedence
-over both tmux and WezTerm ([docs/multiplexer.md](multiplexer.md)).
+over tmux, screen and WezTerm ([docs/multiplexer.md](multiplexer.md)).
 
 ## Check
 

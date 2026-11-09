@@ -2,7 +2,7 @@
 
 tmux is a standalone terminal multiplexer: it runs inside any terminal. When
 Amaca runs inside tmux, tmux owns the panes even if the outer terminal has its
-own multiplexer, so tmux takes precedence over WezTerm
+own multiplexer, so tmux takes precedence over screen and WezTerm
 ([docs/multiplexer.md](multiplexer.md)).
 
 ## Check

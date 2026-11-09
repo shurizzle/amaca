@@ -6,7 +6,8 @@ Given a ticket, it prepares the terminal window to work on it.
 Topic details live in the knowledge base: [docs/workflow.md](docs/workflow.md),
 [docs/jira.md](docs/jira.md), [docs/worktree.md](docs/worktree.md),
 [docs/multiplexer.md](docs/multiplexer.md), [docs/zellij.md](docs/zellij.md),
-[docs/tmux.md](docs/tmux.md), [docs/wezterm.md](docs/wezterm.md),
+[docs/tmux.md](docs/tmux.md), [docs/screen.md](docs/screen.md),
+[docs/wezterm.md](docs/wezterm.md),
 [docs/config.md](docs/config.md).
 
 ## Flow
@@ -21,10 +22,10 @@ ticket input
  worktree resolution  ->  ticket working directory
      |
      v
- multiplexer setup (zellij, tmux or wezterm cli)
+ multiplexer setup (zellij, tmux, screen or wezterm cli)
      |
-     +--> top pane (small): current exe with the hidden ꙮ command,
-     |    given id, title and summary; focus returns to the pane below
+     +--> banner pane (small): current exe with the hidden ꙮ command,
+     |    given id, title and summary; focus returns to the original pane
      |
      +--> current pane: Claude (resumes the ticket session, named after
           the ticket id)
@@ -39,7 +40,7 @@ ticket input
 | Session | New Claude session id per run, created by the ticket fetch and reused by the launchers | Done |
 | Config | `.amaca.jsonc` lookup from the current directory up to the root, closest file wins: prompts and the worktree creation command ([docs/config.md](docs/config.md)) | Done |
 | Worktree resolver | Find or create the ticket worktree from the ticket id ([docs/worktree.md](docs/worktree.md)) | Done |
-| Terminal orchestrator | Detect the multiplexer, split the current pane, run the `ꙮ` banner on top and give the focus back; zellij, tmux and WezTerm backends | Done |
+| Terminal orchestrator | Detect the multiplexer, split the current pane, run the `ꙮ` banner in the new pane and give the focus back; zellij, tmux, screen and WezTerm backends | Done |
 | Claude launcher | Resume the session named after the ticket id and ask Claude to solve the ticket | Done |
 
 ## Decisions
@@ -65,27 +66,32 @@ See the topic docs for the rationale.
 - The backend is detected by probing in priority order: zellij when
   `ZELLIJ_PANE_ID` is set and `zellij action list-panes` succeeds; otherwise
   tmux when `TMUX_PANE` is set and `tmux list-panes` succeeds; otherwise
-  WezTerm when `WEZTERM_PANE` is set and `wezterm cli list` succeeds. A failing
-  probe falls through to the next backend
+  screen when `STY` is set and `screen -Q number` succeeds; otherwise WezTerm
+  when `WEZTERM_PANE` is set and `wezterm cli list` succeeds. A failing probe
+  falls through to the next backend
   ([docs/multiplexer.md](docs/multiplexer.md)).
 - Each backend is driven through its own CLI: `zellij action`
-  ([docs/zellij.md](docs/zellij.md)), `tmux` ([docs/tmux.md](docs/tmux.md)) or
-  `wezterm cli` ([docs/wezterm.md](docs/wezterm.md)).
+  ([docs/zellij.md](docs/zellij.md)), `tmux` ([docs/tmux.md](docs/tmux.md)),
+  `screen` ([docs/screen.md](docs/screen.md)) or `wezterm cli`
+  ([docs/wezterm.md](docs/wezterm.md)).
 - zellij cannot open a pane above the current one: the new pane opens below
   and `zellij action move-pane` swaps it above. zellij cannot size a new tiled
   pane either, so the top pane starts at half height and `zellij action resize`
   shrinks it to the minimum zellij allows: 6 rows with the frame
   ([docs/zellij.md](docs/zellij.md)).
-- The layout is a split of the current pane: a small pane on top runs the
-  hidden `ꙮ` command with the ticket id, title and summary, then the focus goes
-  back to the pane below, where Claude launches
+- screen cannot move a region either, so its banner region stays below the
+  current one and its size is set directly with `screen -X resize`
+  ([docs/screen.md](docs/screen.md)).
+- The layout is a split of the current pane: a small pane runs the hidden `ꙮ`
+  command with the ticket id, title and summary, then the focus goes back to
+  the original pane, where Claude launches
   ([docs/multiplexer.md](docs/multiplexer.md)).
 
 ## Non-goals
 
 - Launching Neovim. Editing is part of the user's own workflow, outside Amaca.
-- Other multiplexers and terminals with a built-in mux beyond zellij, tmux
-  and WezTerm.
+- Other multiplexers and terminals with a built-in mux beyond zellij, tmux,
+  screen and WezTerm.
   Add one module under `src/mux/` per backend
   ([docs/multiplexer.md](docs/multiplexer.md)).
 
