@@ -11,6 +11,7 @@ anything it omits keeps the value from the nearest parent that sets it.
 | --- | --- |
 | `prompt.created` | The worktree was just created |
 | `prompt.existing` | The worktree already existed |
+| `prompt.review` | The `review` subcommand: review the pull request with the ticket and the GitHub conversation as the handoff |
 
 `{id}` is replaced with the ticket id. Without a config file Amaca uses the
 built-in defaults in `src/config.rs`.
@@ -33,13 +34,14 @@ built-in defaults in `src/config.rs`.
 
 | Key | When |
 | --- | --- |
-| `command.created` | The worktree was just created |
+| `command.created` | The worktree was just created, in `solve` and in `review` |
 
 A string runs through `system(3)`, so the shell interprets it. An array of
 strings is the argv run directly with `Command`, without a shell. Both inherit
 the terminal, run after Amaca enters the new worktree and before the pane
-layout and Claude start. The command does not run when the worktree already
-existed. A non-zero exit stops Amaca.
+layout and Claude start. In `solve` the command does not run when the worktree
+already existed; `review` always creates its worktree, so there it always runs.
+A non-zero exit stops Amaca.
 
 ## Editor schema
 

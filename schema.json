@@ -58,6 +58,14 @@
             "null"
           ],
           "default": null
+        },
+        "review": {
+          "description": "Prompt used by the `review` subcommand.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
         }
       },
       "additionalProperties": false

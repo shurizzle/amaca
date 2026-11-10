@@ -42,10 +42,12 @@ amaca solve <link|key>   # Jira URL or ticket key
 amaca solve              # current git branch name
 amaca <link|key>         # same, solve is the default subcommand
 amaca                    # same, current git branch name
+amaca review <link|number>  # GitHub pull request
 ```
 
-The CLI is clap-based; `solve` holds the whole workflow and is the only
-subcommand for now. Without a subcommand, `solve` runs.
+The CLI is clap-based. `solve` holds the whole ticket workflow and is the
+default when no subcommand is given. `review` takes a GitHub pull request as
+a required argument.
 
 - With an argument, the input is a Jira link or a ticket key.
 - Without arguments, Amaca takes the current git branch name. Outside a git
@@ -55,6 +57,30 @@ subcommand for now. Without a subcommand, `solve` runs.
   is an explicit error.
 - Every run creates a new Claude session with a fresh id. The session is stored
   by Claude Code and resumed by id; Amaca writes no state of its own.
+
+## Review
+
+`amaca review <link|number>` reviews a GitHub pull request:
+
+1. Claude resolves the head branch of the pull request
+   ([docs/github.md](github.md)).
+2. Amaca extracts the Jira ticket key from the branch name (`AA-1234` or
+   `AA-1234-ticket-title`) and fetches the ticket as in `solve`
+   ([docs/jira.md](jira.md)).
+3. Amaca resumes the run's session and asks Claude to load the whole pull
+   request conversation into its context ([docs/github.md](github.md)).
+4. Amaca fetches the head branch from `origin` and creates a throwaway
+   `review-<ticket>` worktree on it, with a random suffix when the name is
+   taken ([docs/worktree.md](worktree.md)).
+5. Amaca runs the `command.created` setup command from the config inside it,
+   as in `solve` ([docs/config.md](config.md)).
+6. Amaca opens the same banner layout and resumes the session with the
+   `review` prompt: the ticket and the conversation are the handoff, and
+   Claude reports findings without changing code
+   ([docs/config.md](config.md)).
+7. When Claude exits, Amaca removes the worktree with
+   `git worktree remove --force` and deletes the local branch with
+   `git branch -D`.
 
 ## Open questions
 

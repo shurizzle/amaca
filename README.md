@@ -16,6 +16,12 @@ the current zellij, tmux, screen, kitty, iTerm2 or WezTerm window, gives the
 focus back, resumes the session named after the ticket id and asks Claude to
 solve the ticket.
 
+The `review` subcommand takes a GitHub pull request, resolves its head branch
+with Claude, extracts the Jira ticket key from the branch, loads the ticket
+and the whole pull request conversation into one session, checks the branch
+out in a throwaway worktree and asks Claude to review it
+([docs/github.md](docs/github.md)).
+
 ## Usage
 
 ```sh
@@ -23,6 +29,8 @@ amaca solve https://example.atlassian.net/browse/PROJ-123
 amaca solve PROJ-123
 amaca solve            # uses the current git branch name
 amaca PROJ-123         # solve is the default subcommand
+amaca review https://github.com/owner/repo/pull/123
+amaca review 123       # pull request number
 ```
 
 ## Documentation

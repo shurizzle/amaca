@@ -4,7 +4,8 @@ Amaca automates a personal workflow: Jira -> terminal multiplexer -> Claude.
 Given a ticket, it prepares the terminal window to work on it.
 
 Topic details live in the knowledge base: [docs/workflow.md](docs/workflow.md),
-[docs/jira.md](docs/jira.md), [docs/worktree.md](docs/worktree.md),
+[docs/jira.md](docs/jira.md), [docs/github.md](docs/github.md),
+[docs/worktree.md](docs/worktree.md),
 [docs/multiplexer.md](docs/multiplexer.md), [docs/zellij.md](docs/zellij.md),
 [docs/tmux.md](docs/tmux.md), [docs/screen.md](docs/screen.md),
 [docs/kitty.md](docs/kitty.md), [docs/iterm2.md](docs/iterm2.md),
@@ -31,6 +32,25 @@ ticket input
           the ticket id)
 ```
 
+Review turns a pull request into the same ticket session, then swaps the
+worktree:
+
+```
+pull request input
+     |
+     v
+ head branch (Claude + GitHub MCP)  ->  ticket key (extracted from the branch)
+     |
+     v
+ ticket (id, title, summary, body)  ->  whole pull request conversation
+     |
+     v
+ throwaway worktree on the head branch  ->  same multiplexer layout
+     |
+     v
+ current pane: Claude (resumes the session, reviews the pull request)
+```
+
 ## Components
 
 | Component | Responsibility | Status |
@@ -40,8 +60,9 @@ ticket input
 | Session | New Claude session id per run, created by the ticket fetch and reused by the launchers | Done |
 | Config | `.amaca.jsonc` lookup from the current directory up to the root, closest file wins: prompts and the worktree creation command ([docs/config.md](docs/config.md)) | Done |
 | Worktree resolver | Find or create the ticket worktree from the ticket id ([docs/worktree.md](docs/worktree.md)) | Done |
+| Review resolver | Resolve the pull request head branch with Claude, extract the Jira key, and create a throwaway `review-<ticket>` worktree on that branch ([docs/github.md](docs/github.md), [docs/worktree.md](docs/worktree.md)) | Done |
 | Terminal orchestrator | Detect the multiplexer, open a small banner pane, run the `ꙮ` command in it and give the focus back; zellij, tmux, screen, kitty, iTerm2 and WezTerm backends | Done |
-| Claude launcher | Resume the session named after the ticket id and ask Claude to solve the ticket | Done |
+| Claude launcher | Resume the session named after the ticket id and ask Claude to solve or review the ticket | Done |
 
 ## Decisions
 
@@ -62,7 +83,23 @@ See the topic docs for the rationale.
   ([docs/config.md](docs/config.md), [docs/workflow.md](docs/workflow.md)).
 - A just-created worktree can run one setup command from the config, inside the
   new worktree, before the layout and Claude: a shell line through
-  `system(3)`, or an argv through `Command` ([docs/config.md](docs/config.md)).
+  `system(3)`, or an argv through `Command`. It runs in `solve` and in
+  `review` ([docs/config.md](docs/config.md)).
+- `review` resolves the pull request head branch with Claude, then extracts the
+  Jira key from the branch name: the branch may add a title after the key
+  (`AA-1234-ticket-title`), so only the key is used for the ticket fetch and
+  the banner. The ticket fetch is the same as `solve`
+  ([docs/github.md](docs/github.md)).
+- `review` loads the whole pull request conversation into the run's session
+  with the GitHub MCP tools, so ticket and conversation
+  are both in context when the review prompt starts
+  ([docs/github.md](docs/github.md)).
+- The review worktree is throwaway: local branch `review-<ticket>` from the
+  fetched `origin/<head branch>`, a random suffix when the name is taken, and
+  `git worktree remove --force` and `git branch -D` when Claude exits
+  ([docs/worktree.md](docs/worktree.md)).
+- The review prompt comes from `prompt.review` in the config
+  ([docs/config.md](docs/config.md)).
 - The backend is detected by probing in priority order: zellij when
   `ZELLIJ_PANE_ID` is set and `zellij action list-panes` succeeds; otherwise
   tmux when `TMUX_PANE` is set and `tmux list-panes` succeeds; otherwise

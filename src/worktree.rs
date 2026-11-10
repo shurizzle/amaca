@@ -2,12 +2,21 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
+use uuid::Uuid;
 
 use crate::git;
 
 pub struct Worktree {
     pub path: PathBuf,
     pub created: bool,
+}
+
+/// A throwaway worktree on a pull request branch. It is removed when dropped,
+/// after Claude exits, together with its local branch.
+pub struct Review {
+    pub path: PathBuf,
+    name: String,
+    original: PathBuf,
 }
 
 /// Returns the worktree for the ticket, creating it when missing.
@@ -34,6 +43,63 @@ pub fn ensure(ticket: &str) -> Result<Worktree> {
         path: PathBuf::from(path),
         created: true,
     })
+}
+
+/// Creates a throwaway worktree on the pull request branch, fetched from
+/// origin. The local branch is `review-<ticket>`, with a random suffix when
+/// that name is taken. Dropping the result removes the worktree.
+pub fn review(ticket: &str, branch: &str) -> Result<Review> {
+    git::run(&["fetch", "origin", branch])?;
+    let start = if ref_exists(&format!("refs/remotes/origin/{branch}"))? {
+        format!("origin/{branch}")
+    } else if ref_exists(&local_ref(branch))? {
+        branch.to_owned()
+    } else {
+        bail!("branch {branch:?} not found: neither origin/{branch} nor {branch} exists")
+    };
+
+    let name = review_name(ticket)?;
+    let path = target_path(&name)?;
+    let path_str = path.to_str().context("worktree path is not valid UTF-8")?;
+    git::run(&["worktree", "add", "-b", &name, path_str, &start])?;
+
+    let original = std::env::current_dir().context("cannot read the current directory")?;
+    Ok(Review {
+        path,
+        name,
+        original,
+    })
+}
+
+fn review_name(ticket: &str) -> Result<String> {
+    let base = format!("review-{ticket}");
+    let mut name = base.clone();
+    loop {
+        let path = target_path(&name)?;
+        if !ref_exists(&local_ref(&name))? && !path.exists() {
+            return Ok(name);
+        }
+        name = format!("{base}-{}", &Uuid::new_v4().simple().to_string()[..8]);
+    }
+}
+
+impl Drop for Review {
+    fn drop(&mut self) {
+        // git refuses to remove the worktree Amaca is inside.
+        let _ = std::env::set_current_dir(&self.original);
+        let _ = crate::terminal::set_cwd(&self.original);
+        let Some(path) = self.path.to_str() else {
+            return;
+        };
+        if let Err(err) = git::run(&["worktree", "remove", "--force", path]) {
+            eprintln!("warning: cannot remove the review worktree: {err:#}");
+            // The worktree still holds the branch, so deleting it would fail.
+            return;
+        }
+        if let Err(err) = git::run(&["branch", "-D", &self.name]) {
+            eprintln!("warning: cannot delete the review branch: {err:#}");
+        }
+    }
 }
 
 fn existing(branch: &str) -> Result<Option<PathBuf>> {

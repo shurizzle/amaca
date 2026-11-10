@@ -15,6 +15,9 @@ const DEFAULT_CREATED: &str = "The worktree was just created: do any setup it ne
      Follow the repository conventions.";
 const DEFAULT_EXISTING: &str = "Solve the ticket {id}. The ticket is already in this \
      session's context. Follow the repository conventions.";
+const DEFAULT_REVIEW: &str = "Review the pull request checked out in this worktree: {id}. \
+     The Jira ticket and the whole GitHub pull request conversation are already in this \
+     session's context: use them as the handoff. Report findings; do not change code.";
 
 /// User configuration. Every field is optional, so parents and children merge
 /// field by field.
@@ -38,6 +41,8 @@ pub struct Prompt {
     pub created: Option<String>,
     /// Prompt used when the worktree already existed.
     pub existing: Option<String>,
+    /// Prompt used by the `review` subcommand.
+    pub review: Option<String>,
 }
 
 /// Commands run after Amaca enters the worktree and before the layout and
@@ -68,11 +73,21 @@ impl Config {
         prompt.replace("{id}", ticket)
     }
 
+    /// The `review` prompt; `{id}` is replaced with the ticket id.
+    pub fn review_prompt(&self, ticket: &str) -> String {
+        self.prompt
+            .review
+            .as_deref()
+            .unwrap_or(DEFAULT_REVIEW)
+            .replace("{id}", ticket)
+    }
+
     /// Fills the fields still unset, so the closest file wins.
     fn fill_from(&mut self, other: Config) {
         self.schema = self.schema.take().or(other.schema);
         self.prompt.created = self.prompt.created.take().or(other.prompt.created);
         self.prompt.existing = self.prompt.existing.take().or(other.prompt.existing);
+        self.prompt.review = self.prompt.review.take().or(other.prompt.review);
         self.command.created = self.command.created.take().or(other.command.created);
     }
 }
@@ -184,6 +199,11 @@ mod tests {
             config
                 .prompt(false, "ABC-1")
                 .contains("Solve the ticket ABC-1")
+        );
+        assert!(
+            config
+                .review_prompt("ABC-1")
+                .contains("Review the pull request")
         );
     }
 

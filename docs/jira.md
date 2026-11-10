@@ -17,7 +17,7 @@ Atlassian MCP.
   Claude returns one JSON object: `id`, `title`, `summary`, `body`.
   - `claude mcp list` has no JSON output: the parser in `src/ticket.rs` reads
     the first token of each unindented line and drops disabled servers.
-  - When the listing fails, the fallback is `mcp__atlassian`.
+  - When the listing fails, Amaca stops: it does not guess a server name.
 - Amaca keeps only `id`, `title` and `summary` (`Ticket` in `src/ticket.rs`).
   `body` is not parsed: it stays in the Claude session's context, which later
   steps resume, so the content is never fetched twice.

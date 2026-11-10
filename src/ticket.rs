@@ -67,13 +67,13 @@ fn ask_claude(input: &str, session_id: &str) -> Result<String> {
          Input:\n{input}"
     );
 
-    let allowed_tools = format!("--allowedTools={}", allowed_tools().join(","));
+    let allowed = allowed_tools(Some("getJiraIssue"))?;
     let output = Command::new("claude")
         .args([
             "--print",
             "--output-format",
             "text",
-            &allowed_tools,
+            &allowed,
             "--session-id",
             session_id,
             &prompt,
@@ -89,9 +89,10 @@ fn ask_claude(input: &str, session_id: &str) -> Result<String> {
     Ok(String::from_utf8(output.stdout)?)
 }
 
-/// MCP servers are named per setup, so the allow rule is built from the ones
-/// Claude Code reports instead of hardcoding a name.
-fn allowed_tools() -> Vec<String> {
+/// Builds the `--allowedTools` argument from the MCP servers Claude Code
+/// reports, so no server name is hardcoded. With `tool`, each server allows
+/// only that tool; without it, each server allows all of its tools.
+pub(crate) fn allowed_tools(tool: Option<&str>) -> Result<String> {
     let servers = Command::new("claude")
         .args(["mcp", "list"])
         .output()
@@ -100,12 +101,16 @@ fn allowed_tools() -> Vec<String> {
         .map(|output| server_names(&String::from_utf8_lossy(&output.stdout)))
         .unwrap_or_default();
     if servers.is_empty() {
-        return vec!["mcp__atlassian".into()];
+        bail!("cannot list the MCP servers with `claude mcp list`");
     }
-    servers
-        .into_iter()
-        .map(|server| format!("mcp__{server}__getJiraIssue"))
-        .collect()
+    let rules = servers.into_iter().map(|server| match tool {
+        Some(tool) => format!("mcp__{server}__{tool}"),
+        None => format!("mcp__{server}"),
+    });
+    Ok(format!(
+        "--allowedTools={}",
+        rules.collect::<Vec<_>>().join(",")
+    ))
 }
 
 fn server_names(list: &str) -> Vec<String> {
@@ -132,7 +137,7 @@ fn parse(answer: &str) -> Option<Ticket> {
         .ok()
 }
 
-fn is_key(candidate: &str) -> bool {
+pub(crate) fn is_key(candidate: &str) -> bool {
     let Some((project, number)) = candidate.rsplit_once('-') else {
         return false;
     };
