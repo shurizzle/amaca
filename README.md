@@ -32,6 +32,10 @@ amaca PROJ-123         # solve is the default subcommand
 - [docs/](docs/) — knowledge base: workflow, integrations, configuration
 - [schema.json](schema.json) — JSON Schema for `.amaca.jsonc`
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ## Build
 
 ```sh
