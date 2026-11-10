@@ -5,6 +5,7 @@
 
 #[cfg(target_os = "macos")]
 pub mod iterm2;
+pub mod kitty;
 pub mod screen;
 pub mod tmux;
 pub mod wezterm;
@@ -20,6 +21,7 @@ use crate::ticket::Ticket;
 pub enum Mux {
     #[cfg(target_os = "macos")]
     Iterm2(String),
+    Kitty,
     Screen,
     Tmux(String),
     Wezterm(String),
@@ -43,13 +45,16 @@ impl Mux {
     /// standalone multiplexers win over the terminals with a built-in
     /// multiplexer: a terminal with a built-in multiplexer can also run one of
     /// them inside it. zellij wins over tmux because it commonly runs inside
-    /// WezTerm or iTerm2, where it owns the panes.
+    /// WezTerm or iTerm2, where it owns the panes. kitty, iTerm2 and WezTerm
+    /// cannot be the outer terminal at the same time, so their order does not
+    /// matter.
     pub fn detect() -> Result<Self> {
         #[cfg(target_os = "macos")]
         let detected = fallback!(
             zellij::detect,
             tmux::detect,
             screen::detect,
+            kitty::detect,
             iterm2::detect,
             wezterm::detect
         );
@@ -59,10 +64,11 @@ impl Mux {
             zellij::detect,
             tmux::detect,
             screen::detect,
+            kitty::detect,
             wezterm::detect
         );
         detected.context(
-            "not inside zellij, tmux, screen, iTerm2 or WezTerm: amaca needs a terminal \
+            "not inside zellij, tmux, screen, kitty, iTerm2 or WezTerm: amaca needs a terminal \
              multiplexer",
         )
     }
@@ -73,6 +79,7 @@ impl Mux {
         match self {
             #[cfg(target_os = "macos")]
             Mux::Iterm2(session) => iterm2::layout(ticket, cwd, session),
+            Mux::Kitty => kitty::layout(ticket, cwd),
             Mux::Screen => screen::layout(ticket, cwd),
             Mux::Tmux(pane) => tmux::layout(ticket, cwd, pane),
             Mux::Wezterm(pane) => wezterm::layout(ticket, cwd, pane),

@@ -6,12 +6,12 @@ The flow Amaca automates:
 Jira ticket  ->  terminal multiplexer  ->  Claude
 ```
 
-1. User runs Amaca inside zellij, tmux, screen, iTerm2 or WezTerm. Amaca
-   detects the backend first, probing zellij, then tmux, then screen, then
-   iTerm2, then WezTerm (`ZELLIJ_PANE_ID`, `TMUX_PANE`, `STY`,
-   `ITERM_SESSION_ID`, `WEZTERM_PANE` set and their socket or server
-   answering). A failing probe falls through to the next backend; with no
-   reachable backend Amaca exits early
+1. User runs Amaca inside zellij, tmux, screen, kitty, iTerm2 or WezTerm.
+   Amaca detects the backend first, probing zellij, then tmux, then screen,
+   then kitty, then iTerm2, then WezTerm (`ZELLIJ_PANE_ID`, `TMUX_PANE`,
+   `STY`, `KITTY_WINDOW_ID`, `ITERM_SESSION_ID`, `WEZTERM_PANE` set and their
+   socket or server answering). A failing probe falls through to the next
+   backend; with no reachable backend Amaca exits early
    ([docs/multiplexer.md](multiplexer.md)).
 2. User gives a ticket (key, URL, branch, or free text).
 3. Amaca asks Claude to resolve the ticket key and fetch the ticket, returning
@@ -23,9 +23,10 @@ Jira ticket  ->  terminal multiplexer  ->  Claude
    new branch from the dev branch ([docs/worktree.md](docs/worktree.md)).
 5. When the worktree was just created, Amaca runs the `command.created` setup
    command from the config inside it ([docs/config.md](docs/config.md)).
-6. Amaca splits the current zellij, tmux, screen, iTerm2 or WezTerm pane: a
-   small pane runs the hidden `ꙮ` command with the ticket id, title and summary, and
-   the focus goes back to the original pane ([docs/multiplexer.md](multiplexer.md)).
+6. Amaca opens a banner pane in the current zellij, tmux, screen, kitty,
+   iTerm2 or WezTerm window: a small pane runs the hidden `ꙮ` command with the
+   ticket id, title and summary, and the focus goes back to the original pane
+   ([docs/multiplexer.md](multiplexer.md)).
    The banner sits above the original pane, except with screen, which cannot
    move a region and keeps it below ([docs/screen.md](screen.md)).
 7. Amaca resumes the session interactively in the original pane, named after

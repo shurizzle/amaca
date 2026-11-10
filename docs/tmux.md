@@ -2,14 +2,14 @@
 
 tmux is a standalone terminal multiplexer: it runs inside any terminal. When
 Amaca runs inside tmux, tmux owns the panes even if the outer terminal has its
-own multiplexer, so tmux takes precedence over screen, iTerm2 and WezTerm
-([docs/multiplexer.md](multiplexer.md)).
+own multiplexer, so tmux takes precedence over screen, kitty, iTerm2 and
+WezTerm ([docs/multiplexer.md](multiplexer.md)).
 
 ## Check
 
 `TMUX_PANE` must be set and `tmux list-panes` must succeed. When the probe
-fails, Amaca falls back to WezTerm if it is available; otherwise it exits
-before fetching the ticket or creating the worktree.
+fails, Amaca falls through to screen, kitty, iTerm2 or WezTerm; with none
+reachable it exits before fetching the ticket or creating the worktree.
 
 ## Layout
 

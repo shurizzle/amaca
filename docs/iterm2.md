@@ -3,7 +3,9 @@
 iTerm2 is a terminal with a built-in multiplexer. Amaca drives it through the
 iTerm2 API when it runs inside iTerm2 and no standalone multiplexer is
 available: zellij, tmux and screen take precedence over iTerm2 when more than
-one is present ([docs/multiplexer.md](multiplexer.md)).
+one is present. kitty, iTerm2 and WezTerm cannot be the outer terminal at the
+same time, so their order in the chain does not matter
+([docs/multiplexer.md](multiplexer.md)).
 
 The backend is compiled on macOS only.
 
