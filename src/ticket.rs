@@ -67,7 +67,11 @@ fn ask_claude(input: &str, session_id: &str) -> Result<String> {
          Input:\n{input}"
     );
 
-    let allowed = allowed_tools(Some("getJiraIssue"))?;
+    let allowed = allowed_tools(Some(&[
+        "getAccessibleAtlassianResources",
+        "searchJiraIssuesUsingJql",
+        "getJiraIssue",
+    ]))?;
     let output = Command::new("claude")
         .args([
             "--print",
@@ -90,9 +94,9 @@ fn ask_claude(input: &str, session_id: &str) -> Result<String> {
 }
 
 /// Builds the `--allowedTools` argument from the MCP servers Claude Code
-/// reports, so no server name is hardcoded. With `tool`, each server allows
-/// only that tool; without it, each server allows all of its tools.
-pub(crate) fn allowed_tools(tool: Option<&str>) -> Result<String> {
+/// reports, so no server name is hardcoded. With `tools`, each server allows
+/// only those tools; without it, each server allows all of its tools.
+pub(crate) fn allowed_tools(tools: Option<&[&str]>) -> Result<String> {
     let servers = Command::new("claude")
         .args(["mcp", "list"])
         .output()
@@ -103,14 +107,14 @@ pub(crate) fn allowed_tools(tool: Option<&str>) -> Result<String> {
     if servers.is_empty() {
         bail!("cannot list the MCP servers with `claude mcp list`");
     }
-    let rules = servers.into_iter().map(|server| match tool {
-        Some(tool) => format!("mcp__{server}__{tool}"),
-        None => format!("mcp__{server}"),
-    });
-    Ok(format!(
-        "--allowedTools={}",
-        rules.collect::<Vec<_>>().join(",")
-    ))
+    let mut rules = Vec::new();
+    for server in servers {
+        match tools {
+            Some(tools) => rules.extend(tools.iter().map(|tool| format!("mcp__{server}__{tool}"))),
+            None => rules.push(format!("mcp__{server}")),
+        }
+    }
+    Ok(format!("--allowedTools={}", rules.join(",")))
 }
 
 fn server_names(list: &str) -> Vec<String> {

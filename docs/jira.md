@@ -12,9 +12,11 @@ Atlassian MCP.
   working directory.
 - Amaca asks Claude for the ticket through the Atlassian MCP tools
   (`claude --print --allowedTools=<rules> --session-id <uuid>`). The allowed
-  tools are `mcp__<server>__getJiraIssue` for every MCP server that
-  `claude mcp list` reports, so no client-specific server name is hardcoded.
-  Claude returns one JSON object: `id`, `title`, `summary`, `body`.
+  tools are `mcp__<server>__getAccessibleAtlassianResources`,
+  `mcp__<server>__searchJiraIssuesUsingJql` and `mcp__<server>__getJiraIssue`
+  for every MCP server that `claude mcp list` reports, so no client-specific
+  server name is hardcoded. Claude returns one JSON object: `id`, `title`,
+  `summary`, `body`.
   - `claude mcp list` has no JSON output: the parser in `src/ticket.rs` reads
     the first token of each unindented line and drops disabled servers.
   - When the listing fails, Amaca stops: it does not guess a server name.
