@@ -23,7 +23,9 @@ Classic repository (git dir inside the main worktree):
 - `.worktrees/` in the main worktree root, worktree at `.worktrees/$TICKET`;
 - `.worktrees/` is added to the main worktree's `.gitignore`.
 
-Bare repository (detected with `git rev-parse --is-bare-repository`):
+Bare repository (detected with `git rev-parse --is-bare-repository` on the
+shared git directory from `git rev-parse --git-common-dir`, so a worktree of a
+bare clone counts too):
 
 - worktree as a sibling of the git dir, named `$TICKET`.
 

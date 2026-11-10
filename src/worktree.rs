@@ -116,8 +116,20 @@ fn existing(branch: &str) -> Result<Option<PathBuf>> {
 }
 
 fn target_path(ticket: &str) -> Result<PathBuf> {
-    if git::run(&["rev-parse", "--is-bare-repository"])? == "true" {
-        let git_dir = PathBuf::from(git::run(&["rev-parse", "--absolute-git-dir"])?);
+    // A linked worktree of a bare repository is not itself bare, so ask git
+    // about the shared directory instead of the current one.
+    let git_dir = PathBuf::from(git::run(&[
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-common-dir",
+    ])?);
+    let git_dir_arg = format!(
+        "--git-dir={}",
+        git_dir
+            .to_str()
+            .context("git directory path is not valid UTF-8")?
+    );
+    if git::run(&[&git_dir_arg, "rev-parse", "--is-bare-repository"])? == "true" {
         let parent = git_dir
             .parent()
             .context("bare git directory has no parent")?;
