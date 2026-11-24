@@ -44,6 +44,20 @@ the next one. Nesting one standalone multiplexer inside another is not
 supported: detection picks zellij before tmux and screen, and tmux before
 screen, even when the order is reversed.
 
+## Platforms
+
+| Platform | Backends |
+| --- | --- |
+| macOS | all |
+| Linux and other Unix | all except iTerm2 |
+| Windows | WezTerm only |
+
+On Windows the other backends are not compiled in. The banner pane puts the
+console in no-echo, no-line-input mode with ANSI processing enabled, and the
+OSC 7 URL carries the path as `file:///C:/Users/me/repo`. `claude` must be a
+real executable on `PATH` (`claude.exe`): a `.cmd` shim is not resolved by
+`Command`.
+
 After changing directory into the ticket worktree, Amaca emits OSC 7
 (`\x1b]7;file://<path>\x07`) so the terminal tracks the worktree as the current
 directory.

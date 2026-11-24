@@ -5,10 +5,14 @@
 
 #[cfg(target_os = "macos")]
 pub mod iterm2;
+#[cfg(unix)]
 pub mod kitty;
+#[cfg(unix)]
 pub mod screen;
+#[cfg(unix)]
 pub mod tmux;
 pub mod wezterm;
+#[cfg(unix)]
 pub mod zellij;
 
 use std::path::Path;
@@ -21,23 +25,15 @@ use crate::ticket::Ticket;
 pub enum Mux {
     #[cfg(target_os = "macos")]
     Iterm2(String),
+    #[cfg(unix)]
     Kitty,
+    #[cfg(unix)]
     Screen,
+    #[cfg(unix)]
     Tmux(String),
     Wezterm(String),
+    #[cfg(unix)]
     Zellij(String),
-}
-
-macro_rules! fallback {
-    () => {
-        (core::option::Option::<Mux>::None)
-    };
-    ($first:expr) => {
-        $first()
-    };
-    ($first:expr, $($tries:expr),+ $(,)?) => {
-        fallback!($first)$(.or_else($tries))+
-    };
 }
 
 impl Mux {
@@ -49,24 +45,23 @@ impl Mux {
     /// cannot be the outer terminal at the same time, so their order does not
     /// matter.
     pub fn detect() -> Result<Self> {
-        #[cfg(target_os = "macos")]
-        let detected = fallback!(
+        // zellij, tmux, screen and kitty do not run natively on Windows, and
+        // the iTerm2 backend is macOS-only: a backend missing on the platform
+        // is skipped.
+        let detectors: &[fn() -> Option<Mux>] = &[
+            #[cfg(unix)]
             zellij::detect,
+            #[cfg(unix)]
             tmux::detect,
+            #[cfg(unix)]
             screen::detect,
+            #[cfg(unix)]
             kitty::detect,
+            #[cfg(target_os = "macos")]
             iterm2::detect,
-            wezterm::detect
-        );
-        // The iTerm2 backend is macOS-only; without it the chain skips it.
-        #[cfg(not(target_os = "macos"))]
-        let detected = fallback!(
-            zellij::detect,
-            tmux::detect,
-            screen::detect,
-            kitty::detect,
-            wezterm::detect
-        );
+            wezterm::detect,
+        ];
+        let detected = detectors.iter().find_map(|detect| detect());
         detected.context(
             "not inside zellij, tmux, screen, kitty, iTerm2 or WezTerm: amaca needs a terminal \
              multiplexer",
@@ -79,10 +74,14 @@ impl Mux {
         match self {
             #[cfg(target_os = "macos")]
             Mux::Iterm2(session) => iterm2::layout(ticket, cwd, session),
+            #[cfg(unix)]
             Mux::Kitty => kitty::layout(ticket, cwd),
+            #[cfg(unix)]
             Mux::Screen => screen::layout(ticket, cwd),
+            #[cfg(unix)]
             Mux::Tmux(pane) => tmux::layout(ticket, cwd, pane),
             Mux::Wezterm(pane) => wezterm::layout(ticket, cwd, pane),
+            #[cfg(unix)]
             Mux::Zellij(pane) => zellij::layout(ticket, cwd, pane),
         }
     }

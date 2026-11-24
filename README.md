@@ -4,6 +4,9 @@ Automates a personal workflow: **Jira -> terminal multiplexer -> Claude**.
 Takes a ticket as input and sets up the terminal window to work on it.
 Supported multiplexers: zellij, tmux, screen, kitty, iTerm2 and WezTerm
 (standalone multiplexers win when more than one is present).
+Platforms: macOS and Linux with every backend except iTerm2 (macOS only);
+Windows with WezTerm only, since zellij, tmux, screen and kitty do not run
+there.
 
 ## Status
 
@@ -31,6 +34,7 @@ amaca solve            # uses the current git branch name
 amaca PROJ-123         # solve is the default subcommand
 amaca review https://github.com/owner/repo/pull/123
 amaca review 123       # pull request number
+amaca types            # LuaLS annotations for .amaca.lua
 ```
 
 ## Documentation
@@ -38,7 +42,7 @@ amaca review 123       # pull request number
 - [ARCHITECTURE.md](ARCHITECTURE.md) — design, components, decisions, open questions
 - [AGENTS.md](AGENTS.md) — rules for agents and code conventions
 - [docs/](docs/) — knowledge base: workflow, integrations, configuration
-- [schema.json](schema.json) — JSON Schema for `.amaca.jsonc`
+- [types/amaca.lua](types/amaca.lua) — LuaLS annotations for `.amaca.lua`, also printed by `amaca types`
 
 ## License
 

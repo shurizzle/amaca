@@ -58,7 +58,7 @@ pull request input
 | CLI | clap subcommands; `solve` runs the whole workflow and is the default when no subcommand is given | Done |
 | Input parser | Resolve the input (argument or git branch) into a ticket via Claude: `id`, `title`, `summary`, `body` | Done |
 | Session | New Claude session id per run, created by the ticket fetch and reused by the launchers | Done |
-| Config | `.amaca.jsonc` lookup from the current directory up to the root, closest file wins: prompts and the worktree creation command ([docs/config.md](docs/config.md)) | Done |
+| Config | `.amaca.lua` (LuaJIT through `mlua`) lookup from the current directory up to the root, closest file wins: `prompt` (string or function) and hooks (`created`, `enter`, `before_launch`) ([docs/config.md](docs/config.md)) | Done |
 | Worktree resolver | Find or create the ticket worktree from the ticket id ([docs/worktree.md](docs/worktree.md)) | Done |
 | Review resolver | Resolve the pull request head branch with Claude, extract the Jira key, and create a throwaway `review-<ticket>` worktree on that branch ([docs/github.md](docs/github.md), [docs/worktree.md](docs/worktree.md)) | Done |
 | Terminal orchestrator | Detect the multiplexer, open a small banner pane, run the `ꙮ` command in it and give the focus back; zellij, tmux, screen, kitty, iTerm2 and WezTerm backends | Done |
@@ -79,12 +79,15 @@ See the topic docs for the rationale.
 - The resumed Claude session is named after the ticket id (`--name`)
   ([docs/workflow.md](docs/workflow.md)).
 - The resumed session gets one prompt: ask Claude to solve the ticket. The
-  prompt comes from the config, with a separate one for a just-created worktree
-  ([docs/config.md](docs/config.md), [docs/workflow.md](docs/workflow.md)).
-- A just-created worktree can run one setup command from the config, inside the
-  new worktree, before the layout and Claude: a shell line through
-  `system(3)`, or an argv through `Command`. It runs in `solve` and in
-  `review` ([docs/config.md](docs/config.md)).
+  prompt comes from the config, with a different default for a just-created
+  worktree ([docs/config.md](docs/config.md), [docs/workflow.md](docs/workflow.md)).
+- Platforms: macOS and Linux with all backends (iTerm2 is macOS-only), Windows
+  with WezTerm only. Unix-only code (`libc`, the zellij, tmux, screen and kitty
+  backends) is behind `#[cfg(unix)]` and the Windows console code behind
+  `#[cfg(windows)]` ([docs/multiplexer.md](docs/multiplexer.md)).
+- Config hooks (`created`, `enter`, `before_launch`) run Lua functions inside
+  the worktree. `amaca.run` runs a shell line (`sh -c`, `cmd /C` on Windows) or
+  an argv through `Command` ([docs/config.md](docs/config.md)).
 - `review` resolves the pull request head branch with Claude, then extracts the
   Jira key from the branch name: the branch may add a title after the key
   (`AA-1234-ticket-title`), so only the key is used for the ticket fetch and
@@ -98,7 +101,8 @@ See the topic docs for the rationale.
   fetched `origin/<head branch>`, a random suffix when the name is taken, and
   `git worktree remove --force` and `git branch -D` when Claude exits
   ([docs/worktree.md](docs/worktree.md)).
-- The review prompt comes from `prompt.review` in the config
+- The prompt comes from `prompt` in the config, a string or a function of
+  `ctx`; the built-in default depends on `ctx.mode` and `ctx.created`
   ([docs/config.md](docs/config.md)).
 - The backend is detected by probing in priority order: zellij when
   `ZELLIJ_PANE_ID` is set and `zellij action list-panes` succeeds; otherwise

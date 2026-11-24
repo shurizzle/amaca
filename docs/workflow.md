@@ -21,19 +21,20 @@ Jira ticket  ->  terminal multiplexer  ->  Claude
    session (`--resume <uuid>`) and do not fetch the ticket again.
 4. Amaca resolves the ticket worktree: existing branch, existing worktree, or a
    new branch from the dev branch ([docs/worktree.md](docs/worktree.md)).
-5. When the worktree was just created, Amaca runs the `command.created` setup
-   command from the config inside it ([docs/config.md](docs/config.md)).
+5. When the worktree was just created, Amaca runs the `created` hook from the
+   config inside it, then the `enter` hook (every run) ([docs/config.md](docs/config.md)).
 6. Amaca opens a banner pane in the current zellij, tmux, screen, kitty,
    iTerm2 or WezTerm window: a small pane runs the hidden `ꙮ` command with the
    ticket id, title and summary, and the focus goes back to the original pane
-   ([docs/multiplexer.md](multiplexer.md)).
+   ([docs/multiplexer.md](multiplexer.md)). The `before_launch` hook runs once
+   the layout is open.
    The banner sits above the original pane, except with screen, which cannot
    move a region and keeps it below ([docs/screen.md](screen.md)).
 7. Amaca resumes the session interactively in the original pane, named after
    the ticket id (`--name <TICKET_ID>`), asking Claude to solve the ticket. The
    ticket is already in the session's context. The prompt comes from the
-   config ([docs/config.md](docs/config.md)): `prompt.created` when the
-   worktree was just created, `prompt.existing` otherwise.
+   config ([docs/config.md](docs/config.md)): `prompt`, or the built-in
+   default for a just-created or an existing worktree.
 
 ## Input
 
@@ -72,8 +73,8 @@ a required argument.
 4. Amaca fetches the head branch from `origin` and creates a throwaway
    `review-<ticket>` worktree on it, with a random suffix when the name is
    taken ([docs/worktree.md](worktree.md)).
-5. Amaca runs the `command.created` setup command from the config inside it,
-   as in `solve` ([docs/config.md](config.md)).
+5. Amaca runs the `created` and `enter` hooks from the config inside it, as in
+   `solve` ([docs/config.md](config.md)).
 6. Amaca opens the same banner layout and resumes the session with the
    `review` prompt: the ticket and the conversation are the handoff, and
    Claude reports findings without changing code

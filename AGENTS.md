@@ -44,8 +44,6 @@ fixed or deleted, not left behind.
   No `Box<dyn Error>` and no hand-rolled `format!` error plumbing.
 - Follow the patterns already in the codebase; do not introduce new abstractions without a reason.
 - Before considering work done: `cargo fmt`, `cargo clippy`, `cargo test`.
-- `schema.json` is generated from the config structs. After changing them, run
-  `UPDATE_SCHEMA=1 cargo test config_schema_is_current`.
 - Keep multiplexer-specific code inside its backend under `src/mux/`: no
   `zellij action`, `tmux`, `screen`, `kitty @`, iTerm2 API or `wezterm cli`
   calls outside the zellij, tmux, screen, kitty, iTerm2 and WezTerm modules.

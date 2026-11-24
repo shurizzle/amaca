@@ -22,10 +22,10 @@ MCP.
    and issue comments. The conversation stays in the session's context.
 5. Amaca creates the throwaway review worktree on the head branch
    ([docs/worktree.md](worktree.md)).
-6. Amaca runs the `command.created` setup command from the config inside it
+6. Amaca runs the `created` and `enter` hooks from the config inside it
    ([docs/config.md](config.md)).
 7. Amaca opens the same banner layout as `solve` and resumes the session with
-   the `review` prompt ([docs/config.md](config.md)). The prompt uses the
+   the review prompt ([docs/config.md](config.md)). The prompt uses the
    ticket and the conversation already in context as the handoff.
 
 ## MCP rules

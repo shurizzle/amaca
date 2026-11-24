@@ -53,7 +53,7 @@ bare repository's sibling).
 
 - Never touch a worktree that belongs to another ticket.
 - Running Amaca twice on the same ticket reuses the worktree.
-- When it creates the worktree, Amaca runs the `command.created` config command
+- When it creates the worktree, Amaca runs the `created` hook of the config
   inside it, in `solve` and in `review`; its failure stops the run
   ([docs/config.md](config.md)).
 - Amaca changes its working directory into the ticket worktree, so every later

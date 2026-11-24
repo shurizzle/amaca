@@ -43,6 +43,8 @@ enum Command {
         /// GitHub pull request link or number.
         input: String,
     },
+    /// Print the LuaLS type annotations for `.amaca.lua`.
+    Types,
     /// Print the arguments on the alternate screen and wait forever.
     #[command(hide = true)]
     ꙮ {
@@ -57,6 +59,10 @@ fn main() -> ExitCode {
     match match cli.command {
         Some(Command::Solve { input }) => solve(input),
         Some(Command::Review { input }) => review(&input),
+        Some(Command::Types) => {
+            print!("{}", config::TYPES);
+            Ok(())
+        }
         Some(Command::ꙮ {
             first,
             second,
@@ -99,14 +105,19 @@ fn solve(input: Option<String>) -> Result<()> {
         .with_context(|| format!("cannot enter {}", worktree.path.display()))?;
     terminal::set_cwd(&worktree.path)?;
 
-    if worktree.created
-        && let Some(setup) = &config.command.created
-    {
-        command::run(setup)?;
+    let ctx = config::Ctx {
+        id: ticket.id.clone(),
+        worktree: worktree.path.clone(),
+        mode: config::Mode::Solve,
+        created: worktree.created,
+    };
+    if worktree.created {
+        config.hook("created", &ctx)?;
     }
-
+    config.hook("enter", &ctx)?;
     mux.layout(&ticket, &worktree.path)?;
-    let prompt = config.prompt(worktree.created, &ticket.id);
+    config.hook("before_launch", &ctx)?;
+    let prompt = config.prompt(&ctx)?;
     claude::launch(&session_id, &ticket, &prompt)
 }
 
@@ -124,12 +135,18 @@ fn review(input: &str) -> Result<()> {
         .with_context(|| format!("cannot enter {}", worktree.path.display()))?;
     terminal::set_cwd(&worktree.path)?;
 
-    if let Some(setup) = &config.command.created {
-        command::run(setup)?;
-    }
+    let ctx = config::Ctx {
+        id: ticket.id.clone(),
+        worktree: worktree.path.clone(),
+        mode: config::Mode::Review,
+        created: true,
+    };
+    config.hook("created", &ctx)?;
+    config.hook("enter", &ctx)?;
 
     review::load_conversation(input, &session_id)?;
     mux.layout(&ticket, &worktree.path)?;
-    let prompt = config.review_prompt(&ticket.id);
+    config.hook("before_launch", &ctx)?;
+    let prompt = config.prompt(&ctx)?;
     claude::launch(&session_id, &ticket, &prompt)
 }
